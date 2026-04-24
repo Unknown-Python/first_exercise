@@ -1,7 +1,7 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'database_service.dart';
 
 import 'movie.dart';
 
@@ -64,6 +64,12 @@ class _MyHomePageState extends State<MyHomePage> {
         movies.length,
         (index) => Movie.fromJson(movies[index] as Map<String, dynamic>),
       );
+      for (final movie in returnValue) {
+        await DatabaseService().insertMovie(movie);
+        print(
+          'Movies saved to database: ${returnValue.length}',
+        ); //to check if the Data really has ben saved to sqlite db in the Phone
+      }
     }
     return returnValue;
   }
