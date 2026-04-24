@@ -19,8 +19,16 @@ class DatabaseService {
     final databasePath = await getDatabasesPath();
     final path = join(databasePath, 'flutter_database.db');
 
-    return await openDatabase(path, onCreate: _onCreate, version: 1);
-  }
+    return await openDatabase(
+      path,
+      onCreate: _onCreate,
+      onOpen: (db) async {
+        await db.execute('DROP TABLE IF EXISTS movies');
+        await _onCreate(db, 1);
+      },
+      version: 1,
+    );
+  } //drops the Table to make sure no duplicate data is stored
 
   Future<void> _onCreate(Database db, int version) async {
     await db.execute(

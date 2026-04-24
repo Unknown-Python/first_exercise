@@ -41,6 +41,15 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   List<Movie> _movies = [];
   bool _isLoading = false;
+  final DatabaseService _databaseService = DatabaseService();
+  final TextEditingController _textController = TextEditingController();
+
+  void _onChanged(String input) async {
+    final results = await _databaseService.findByTitle(input);
+    setState(() {
+      _movies = results;
+    });
+  }
 
   @override
   void initState() {
@@ -83,15 +92,33 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: _movies.length,
-              itemBuilder: (context, index) {
-                final movie = _movies[index];
-                return ListTile(
-                  title: Text(movie.title),
-                  subtitle: Text(movie.director),
-                );
-              },
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: TextField(
+                    controller: _textController,
+                    onChanged: _onChanged,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Search by title',
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: _movies.length,
+                    itemBuilder: (context, index) {
+                      final movie = _movies[index];
+                      return ListTile(
+                        title: Text(movie.title),
+                        subtitle: Text(movie.director),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
     );
   }
