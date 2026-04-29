@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'database_service.dart';
-
+import 'detailscreen.dart';
 import 'movie.dart';
 
 void main() {
@@ -29,10 +29,16 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title, required this.movieUri});
+  const MyHomePage({
+    super.key,
+    required this.title,
+    required this.movieUri,
+    this.movieLoader,
+  });
 
   final String title;
   final String movieUri;
+  final Future<List<Movie>> Function()? movieLoader;
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -59,7 +65,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _loadAndShow() async {
     setState(() => _isLoading = true);
-    _movies = await _loadMovies();
+    _movies = await (widget.movieLoader?.call() ?? _loadMovies());
     setState(() => _isLoading = false);
   }
 
@@ -114,6 +120,15 @@ class _MyHomePageState extends State<MyHomePage> {
                       return ListTile(
                         title: Text(movie.title),
                         subtitle: Text(movie.director),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  MovieDetailScreen(movie: movie),
+                            ),
+                          );
+                        },
                       );
                     },
                   ),
