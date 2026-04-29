@@ -1,8 +1,8 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-
+import 'database_service.dart';
+import 'detailscreen.dart';
 import 'movie.dart';
 
 void main() {
@@ -29,10 +29,16 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title, required this.movieUri});
+  const MyHomePage({
+    super.key,
+    required this.title,
+    required this.movieUri,
+    this.movieLoader,
+  });
 
   final String title;
   final String movieUri;
+  final Future<List<Movie>> Function()? movieLoader;
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -41,6 +47,15 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   List<Movie> _movies = [];
   bool _isLoading = false;
+  final DatabaseService _databaseService = DatabaseService();
+  final TextEditingController _textController = TextEditingController();
+
+  void _onChanged(String input) async {
+    final results = await _databaseService.findByTitle(input);
+    setState(() {
+      _movies = results;
+    });
+  }
 
   @override
   void initState() {
@@ -50,7 +65,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _loadAndShow() async {
     setState(() => _isLoading = true);
-    _movies = await _loadMovies();
+    _movies = await (widget.movieLoader?.call() ?? _loadMovies());
     setState(() => _isLoading = false);
   }
 
@@ -64,6 +79,12 @@ class _MyHomePageState extends State<MyHomePage> {
         movies.length,
         (index) => Movie.fromJson(movies[index] as Map<String, dynamic>),
       );
+      for (final movie in returnValue) {
+        await DatabaseService().insertMovie(movie);
+        print(
+          'Movies saved to database: ${returnValue.length}',
+        ); //to check if the Data really has ben saved to sqlite db in the Phone
+      }
     }
     return returnValue;
   }
@@ -77,15 +98,42 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: _movies.length,
-              itemBuilder: (context, index) {
-                final movie = _movies[index];
-                return ListTile(
-                  title: Text(movie.title),
-                  subtitle: Text(movie.director),
-                );
-              },
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: TextField(
+                    controller: _textController,
+                    onChanged: _onChanged,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      labelText: 'Search by title',
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: _movies.length,
+                    itemBuilder: (context, index) {
+                      final movie = _movies[index];
+                      return ListTile(
+                        title: Text(movie.title),
+                        subtitle: Text(movie.director),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  MovieDetailScreen(movie: movie),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
     );
   }
